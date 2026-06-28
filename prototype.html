@@ -1,0 +1,1185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Net Worth Tracker - UI Prototype</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #eef4f8;
+        --surface: #ffffff;
+        --surface-soft: #f7fafc;
+        --ink: #16202a;
+        --muted: #647484;
+        --line: #dbe6ee;
+        --blue: #2563eb;
+        --blue-soft: #dbeafe;
+        --green: #138a59;
+        --green-soft: #dff7ea;
+        --red: #c2413d;
+        --red-soft: #fde7e5;
+        --gold: #a96f00;
+        --gold-soft: #fff3cc;
+        --shadow: 0 18px 45px rgba(31, 55, 75, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(180deg, rgba(219, 234, 254, 0.68), rgba(238, 244, 248, 0.18) 38%),
+          var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .app-shell {
+        width: min(1440px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 24px 0 34px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px 20px;
+        margin-bottom: 18px;
+        border: 1px solid rgba(219, 230, 238, 0.9);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(12px);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 46px;
+        height: 46px;
+        place-items: center;
+        border-radius: 8px;
+        background: var(--blue-soft);
+        color: var(--blue);
+        font-size: 25px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 1.55rem;
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+
+      .subtle {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .privacy-note {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #415263;
+        font-size: 0.86rem;
+      }
+
+      .mask-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-width: 256px;
+        padding: 8px 9px 8px 13px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #f8fbfd;
+        color: #314253;
+      }
+
+      .switch {
+        position: relative;
+        width: 48px;
+        height: 28px;
+        border-radius: 999px;
+        background: var(--blue);
+      }
+
+      .switch::after {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+        content: "";
+      }
+
+      .switch.off {
+        background: #9aa8b6;
+      }
+
+      .switch.off::after {
+        right: auto;
+        left: 4px;
+      }
+
+      .worth-dashboard {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(330px, 1fr);
+        overflow: hidden;
+        margin-bottom: 18px;
+        border: 1px solid rgba(219, 230, 238, 0.92);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .card {
+        border: 1px solid rgba(219, 230, 238, 0.92);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: 0 12px 28px rgba(31, 55, 75, 0.08);
+      }
+
+      .worth-hero {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 240px;
+        gap: 24px;
+        min-height: 250px;
+        padding: 36px 42px;
+        overflow: hidden;
+        color: #fff;
+        background:
+          radial-gradient(circle at 72% 28%, rgba(112, 185, 124, 0.42), transparent 34%),
+          linear-gradient(135deg, #124f2d 0%, #0d3d22 52%, #082a18 100%);
+      }
+
+      .worth-hero::after {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(120deg, rgba(255, 255, 255, 0.11), transparent 34%),
+          repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 18px);
+        content: "";
+        pointer-events: none;
+      }
+
+      .worth-copy,
+      .goal-ring-wrap {
+        position: relative;
+        z-index: 1;
+      }
+
+      .worth-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(1.55rem, 2vw, 2.2rem);
+        font-weight: 800;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.28);
+      }
+
+      .eye-icon {
+        display: inline-grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border-radius: 999px;
+        color: #d4f1de;
+        font-size: 1.08rem;
+      }
+
+      .worth-amount {
+        margin-top: 22px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(3.5rem, 7vw, 5.9rem);
+        font-weight: 800;
+        line-height: 0.92;
+        letter-spacing: 0;
+        text-shadow: 0 4px 9px rgba(0, 0, 0, 0.34);
+      }
+
+      .monthly-change {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 30px;
+        color: #a9e8b7;
+        font-size: clamp(1rem, 1.6vw, 1.55rem);
+        font-weight: 850;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.28);
+      }
+
+      .goal-ring-wrap {
+        display: grid;
+        place-items: center;
+      }
+
+      .goal-ring {
+        position: relative;
+        display: grid;
+        width: min(100%, 210px);
+        aspect-ratio: 1;
+        place-items: center;
+        border-radius: 50%;
+        background: conic-gradient(#f7bc54 0deg 115deg, rgba(255, 255, 255, 0.18) 115deg 360deg);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+      }
+
+      .goal-ring::before {
+        position: absolute;
+        inset: 25px;
+        border-radius: 50%;
+        background: #1d6038;
+        box-shadow:
+          inset 0 0 0 22px rgba(255, 255, 255, 0.13),
+          0 12px 30px rgba(0, 0, 0, 0.18);
+        content: "";
+      }
+
+      .goal-ring::after {
+        position: absolute;
+        top: 2px;
+        right: 43px;
+        width: 50px;
+        height: 24px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #f1b84c, #ffe0a6);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+        content: "";
+        transform: rotate(9deg);
+      }
+
+      .goal-ring-label {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        gap: 4px;
+        color: #fff;
+        text-align: center;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .goal-ring-label strong {
+        font-size: clamp(2.2rem, 4vw, 3.2rem);
+        line-height: 0.94;
+      }
+
+      .goal-ring-label span {
+        font-size: clamp(0.9rem, 1.5vw, 1.25rem);
+        font-weight: 800;
+        line-height: 1.15;
+      }
+
+      .worth-side {
+        display: grid;
+        grid-template-rows: 1fr 1fr;
+        background: #fffdf8;
+      }
+
+      .side-metric {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 125px;
+        padding: 30px 26px 30px 34px;
+      }
+
+      .side-metric + .side-metric {
+        border-top: 1px solid rgba(198, 184, 158, 0.5);
+      }
+
+      .side-label {
+        color: #2d2923;
+        font-size: clamp(1.08rem, 1.45vw, 1.4rem);
+      }
+
+      .side-value {
+        margin-top: 12px;
+        font-size: clamp(1.65rem, 2.2vw, 2.15rem);
+        font-weight: 850;
+        letter-spacing: 0;
+      }
+
+      .side-icon {
+        display: grid;
+        width: 86px;
+        height: 86px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 8px;
+        font-size: 2.6rem;
+      }
+
+      .asset-icon {
+        background: #eef5e8;
+      }
+
+      .liability-icon {
+        background: #fde5da;
+      }
+
+      .supporting-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .mini-metric-card {
+        min-height: 100px;
+        padding: 16px 18px;
+      }
+
+      .mini-metric-card .metric-label {
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .mini-metric-card .metric-value {
+        margin-top: 10px;
+        font-size: 1.55rem;
+        font-weight: 850;
+      }
+
+      .accent-blue {
+        color: var(--blue);
+      }
+
+      .accent-green {
+        color: var(--green);
+      }
+
+      .accent-red {
+        color: var(--red);
+      }
+
+      .accent-gold {
+        color: var(--gold);
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .main-column {
+        display: grid;
+        gap: 18px;
+      }
+
+      .form-card,
+      .goal-card,
+      .analysis-card,
+      .list-card {
+        padding: 18px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .section-head h2 {
+        font-size: 1.12rem;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 30px;
+        padding: 5px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: #425466;
+        background: #f8fbfd;
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 14px;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+      }
+
+      .field.full {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        color: #435468;
+        font-size: 0.83rem;
+        font-weight: 800;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfdff;
+        color: var(--ink);
+        outline: none;
+      }
+
+      input,
+      select {
+        height: 44px;
+        padding: 0 12px;
+      }
+
+      textarea {
+        min-height: 78px;
+        resize: vertical;
+        padding: 12px;
+      }
+
+      .selected-category {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+      }
+
+      .category-icon {
+        display: grid;
+        width: 48px;
+        height: 48px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 8px;
+        background: #edf7f1;
+        font-size: 27px;
+      }
+
+      .type-tag {
+        color: var(--green);
+        font-size: 0.86rem;
+        font-weight: 800;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 14px;
+      }
+
+      .primary-button,
+      .ghost-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 14px;
+        border-radius: 8px;
+        cursor: default;
+        font-weight: 800;
+      }
+
+      .primary-button {
+        border: 1px solid var(--blue);
+        background: var(--blue);
+        color: #fff;
+      }
+
+      .ghost-button {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: #415263;
+      }
+
+      .item-lists {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .list-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .list-header h3 {
+        font-size: 1rem;
+      }
+
+      .money-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .money-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
+        gap: 10px;
+        align-items: center;
+        min-height: 62px;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfdff;
+      }
+
+      .mini-icon {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border-radius: 8px;
+        background: #eef6ff;
+        font-size: 21px;
+      }
+
+      .row-title {
+        overflow: hidden;
+        font-weight: 800;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .row-subtitle {
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 0.83rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .row-amount {
+        font-weight: 850;
+        white-space: nowrap;
+      }
+
+      .icon-button {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: #526273;
+      }
+
+      .goal-card {
+        position: sticky;
+        top: 18px;
+      }
+
+      .goal-metrics {
+        display: grid;
+        gap: 10px;
+      }
+
+      .goal-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px;
+        border-radius: 8px;
+        background: var(--surface-soft);
+      }
+
+      .goal-row span:first-child {
+        color: var(--muted);
+        font-size: 0.88rem;
+        font-weight: 750;
+      }
+
+      .goal-row strong {
+        text-align: right;
+      }
+
+      .progress-box {
+        margin: 14px 0;
+        padding: 14px;
+        border: 1px solid #cbe7d5;
+        border-radius: 8px;
+        background: var(--green-soft);
+      }
+
+      .progress-track {
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(19, 138, 89, 0.18);
+      }
+
+      .progress-fill {
+        width: 0.1%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--green);
+      }
+
+      .goal-fields {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .analysis-card {
+        margin-top: 18px;
+      }
+
+      .analysis-grid {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 18px;
+        align-items: stretch;
+      }
+
+      .agent-panel {
+        padding: 16px;
+        border: 1px solid #c6d8e7;
+        border-radius: 8px;
+        background: #f5fbff;
+      }
+
+      .agent-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        font-weight: 850;
+      }
+
+      .agent-copy {
+        color: #394b5b;
+        line-height: 1.58;
+      }
+
+      .insight-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .insight {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .insight strong {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 0.9rem;
+      }
+
+      .insight p {
+        color: var(--muted);
+        font-size: 0.87rem;
+        line-height: 1.42;
+      }
+
+      .chart-panel {
+        padding: 15px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .donut-wrap {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .donut {
+        width: 116px;
+        height: 116px;
+        flex: 0 0 auto;
+        border-radius: 50%;
+        background: conic-gradient(var(--green) 0deg 165deg, var(--red) 165deg 360deg);
+        position: relative;
+      }
+
+      .donut::after {
+        position: absolute;
+        inset: 18px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #fff;
+        color: var(--ink);
+        font-size: 0.85rem;
+        font-weight: 850;
+        content: "A / L";
+      }
+
+      .legend {
+        display: grid;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .dot.green {
+        background: var(--green);
+      }
+
+      .dot.red {
+        background: var(--red);
+      }
+
+      @media (max-width: 1050px) {
+        .worth-dashboard,
+        .supporting-metrics,
+        .dashboard-grid,
+        .analysis-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .worth-dashboard,
+        .worth-hero {
+          grid-column: 1 / -1;
+        }
+
+        .worth-hero {
+          grid-template-columns: minmax(0, 1fr) 210px;
+        }
+
+        .worth-side {
+          grid-column: 1 / -1;
+          grid-template-columns: 1fr 1fr;
+          grid-template-rows: none;
+        }
+
+        .side-metric + .side-metric {
+          border-top: 0;
+          border-left: 1px solid rgba(198, 184, 158, 0.5);
+        }
+
+        .dashboard-grid {
+          align-items: stretch;
+        }
+
+        .main-column,
+        .analysis-card {
+          grid-column: 1 / -1;
+        }
+
+        .goal-card {
+          position: static;
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .app-shell {
+          width: min(100% - 24px, 720px);
+          padding-top: 14px;
+        }
+
+        .topbar,
+        .section-head {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .mask-toggle {
+          min-width: 0;
+          width: 100%;
+        }
+
+        .worth-dashboard,
+        .worth-hero,
+        .supporting-metrics,
+        .form-grid,
+        .item-lists,
+        .analysis-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .worth-hero {
+          min-height: auto;
+          padding: 28px 24px;
+        }
+
+        .worth-amount {
+          overflow-wrap: anywhere;
+        }
+
+        .goal-ring {
+          width: min(210px, 74vw);
+          margin-top: 8px;
+        }
+
+        .worth-side {
+          grid-template-columns: 1fr;
+        }
+
+        .side-metric {
+          min-height: 108px;
+          padding: 22px;
+        }
+
+        .side-metric + .side-metric {
+          border-top: 1px solid rgba(198, 184, 158, 0.5);
+          border-left: 0;
+        }
+
+        .side-icon {
+          width: 66px;
+          height: 66px;
+          font-size: 2rem;
+        }
+
+        .money-row {
+          grid-template-columns: auto minmax(0, 1fr) auto;
+        }
+
+        .money-row .icon-button {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">◆</div>
+          <div>
+            <h1>My Net Worth Tracker</h1>
+            <p class="subtle">Private local dashboard for family-focused financial clarity.</p>
+          </div>
+        </div>
+        <div>
+          <div class="mask-toggle" aria-label="Mask financial numbers toggle">
+            <strong>Mask Financial Numbers: OFF</strong>
+            <span class="switch off" aria-hidden="true"></span>
+          </div>
+          <p class="privacy-note" style="margin-top: 9px">🔒 Your financial data is stored locally in your browser and is not sent anywhere.</p>
+        </div>
+      </header>
+
+      <section class="worth-dashboard" aria-label="Net worth dashboard">
+        <article class="worth-hero">
+          <div class="worth-copy">
+            <div class="worth-title">Your Net Worth <span class="eye-icon" aria-label="masked financial values">◉</span></div>
+            <div class="worth-amount">$478,700</div>
+            <div class="monthly-change">▲ $12,340 (2.64%) this month</div>
+          </div>
+          <div class="goal-ring-wrap" aria-label="Goal progress">
+            <div class="goal-ring">
+              <div class="goal-ring-label">
+                <strong>32%</strong>
+                <span>of $1,500,000<br />goal</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <aside class="worth-side">
+          <div class="side-metric">
+            <div>
+              <div class="side-label">Total Assets</div>
+              <div class="side-value accent-green">$963,700</div>
+            </div>
+            <div class="side-icon asset-icon" aria-hidden="true">💼</div>
+          </div>
+          <div class="side-metric">
+            <div>
+              <div class="side-label">Total Liabilities</div>
+              <div class="side-value accent-red">$485,000</div>
+            </div>
+            <div class="side-icon liability-icon" aria-hidden="true">🏛️</div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="supporting-metrics" aria-label="Financial details">
+        <article class="card mini-metric-card">
+          <div class="metric-label">Asset-to-Liability Ratio</div>
+          <div class="metric-value accent-blue">1.99</div>
+          <p class="metric-note">Assets per $1 of debt</p>
+        </article>
+        <article class="card mini-metric-card">
+          <div class="metric-label">Retirement Years</div>
+          <div class="metric-value accent-gold">23</div>
+          <p class="metric-note">Age 37 to target age 60</p>
+        </article>
+        <article class="card mini-metric-card">
+          <div class="metric-label">Tracked Categories</div>
+          <div class="metric-value accent-green">9</div>
+          <p class="metric-note">6 assets and 3 liabilities</p>
+        </article>
+      </section>
+
+      <section class="dashboard-grid">
+        <div class="main-column">
+          <article class="card form-card">
+            <div class="section-head">
+              <div>
+                <h2>Add or Edit Financial Item</h2>
+                <p class="subtle">Category determines whether the item is an asset or liability.</p>
+              </div>
+              <span class="pill">Sample mode</span>
+            </div>
+
+            <div class="form-grid">
+              <div class="field">
+                <label for="category">Category</label>
+                <select id="category">
+                  <option>401K Account</option>
+                  <option>Savings Account</option>
+                  <option>HSA Account</option>
+                  <option>529 Account</option>
+                  <option>Brokerage Account</option>
+                  <option>Home Loan / Mortgage</option>
+                  <option>Credit Card Debt</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="amount">Amount</label>
+                <input id="amount" value="$180,000" />
+              </div>
+              <div class="field">
+                <label for="label">Account Name or Label</label>
+                <input id="label" value="Employer retirement account" />
+              </div>
+              <div class="selected-category">
+                <div class="category-icon" aria-hidden="true">🌳</div>
+                <div>
+                  <strong>401K Account</strong>
+                  <p class="type-tag">Automatically classified as Asset</p>
+                </div>
+              </div>
+              <div class="field full">
+                <label for="notes">Notes</label>
+                <textarea id="notes">Pre-tax retirement account. Keep contribution rate and employer match visible.</textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="primary-button">＋ Save Item</button>
+              <button class="ghost-button">↻ Clear</button>
+            </div>
+          </article>
+
+          <section class="item-lists">
+            <article class="card list-card">
+              <div class="list-header">
+                <h3>Assets</h3>
+                <span class="pill accent-green">Total $••••••</span>
+              </div>
+              <div class="money-list">
+                <div class="money-row">
+                  <span class="mini-icon">🐷</span>
+                  <div><div class="row-title">Savings Account</div><div class="row-subtitle">Emergency and cash reserves</div></div>
+                  <div class="row-amount">$••••••</div>
+                  <button class="icon-button" title="Edit">✎</button>
+                </div>
+                <div class="money-row">
+                  <span class="mini-icon">🌳</span>
+                  <div><div class="row-title">401K Account</div><div class="row-subtitle">Employer retirement account</div></div>
+                  <div class="row-amount">$••••••</div>
+                  <button class="icon-button" title="Edit">✎</button>
+                </div>
+                <div class="money-row">
+                  <span class="mini-icon">🎓</span>
+                  <div><div class="row-title">529 Account</div><div class="row-subtitle">Education savings for children</div></div>
+                  <div class="row-amount">$••••••</div>
+                  <button class="icon-button" title="Edit">✎</button>
+                </div>
+                <div class="money-row">
+                  <span class="mini-icon">📊</span>
+                  <div><div class="row-title">Brokerage Account</div><div class="row-subtitle">Taxable investment account</div></div>
+                  <div class="row-amount">$••••••</div>
+                  <button class="icon-button" title="Edit">✎</button>
+                </div>
+              </div>
+            </article>
+
+            <article class="card list-card">
+              <div class="list-header">
+                <h3>Liabilities</h3>
+                <span class="pill accent-red">Total $••••••</span>
+              </div>
+              <div class="money-list">
+                <div class="money-row">
+                  <span class="mini-icon">🏠</span>
+                  <div><div class="row-title">Home Loan / Mortgage</div><div class="row-subtitle">Primary residence mortgage</div></div>
+                  <div class="row-amount">$••••••</div>
+                  <button class="icon-button" title="Edit">✎</button>
+                </div>
+                <div class="money-row">
+                  <span class="mini-icon">🚗</span>
+                  <div><div class="row-title">Car Loan</div><div class="row-subtitle">Vehicle financing balance</div></div>
+                  <div class="row-amount">$••••••</div>
+                  <button class="icon-button" title="Edit">✎</button>
+                </div>
+                <div class="money-row">
+                  <span class="mini-icon">💳</span>
+                  <div><div class="row-title">Credit Card Debt</div><div class="row-subtitle">High-interest revolving debt</div></div>
+                  <div class="row-amount">$••••••</div>
+                  <button class="icon-button" title="Edit">✎</button>
+                </div>
+              </div>
+            </article>
+          </section>
+        </div>
+
+        <aside class="card goal-card" aria-label="Goal section">
+          <div class="section-head">
+            <div>
+              <h2>Goal</h2>
+              <p class="subtle">Upper-right goal tracker with editable target inputs.</p>
+            </div>
+            <span class="pill">🎯 Target</span>
+          </div>
+
+          <div class="goal-metrics">
+            <div class="goal-row"><span>Current Net Worth</span><strong>$••••••</strong></div>
+            <div class="goal-row"><span>Target Net Worth</span><strong>$••••••</strong></div>
+            <div class="goal-row"><span>Gap to Goal</span><strong>$••••••</strong></div>
+            <div class="goal-row"><span>Years Remaining</span><strong>23</strong></div>
+            <div class="goal-row"><span>Required Yearly Progress</span><strong>$••••••</strong></div>
+          </div>
+
+          <div class="progress-box">
+            <div class="section-head" style="margin-bottom: 10px">
+              <strong>Progress to target</strong>
+              <span class="subtle">Sample data is below target</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill"></div></div>
+          </div>
+
+          <div class="goal-fields">
+            <div class="field">
+              <label for="target">Target Net Worth</label>
+              <input id="target" value="$1,500,000" />
+            </div>
+            <div class="field">
+              <label for="retirement-age">Target Retirement Age</label>
+              <input id="retirement-age" value="60" />
+            </div>
+            <div class="field">
+              <label for="current-age">Current Age</label>
+              <input id="current-age" value="37" />
+            </div>
+            <div class="field">
+              <label for="goal-notes">Notes</label>
+              <textarea id="goal-notes">Build durable net worth while supporting family needs, education planning, and retirement readiness.</textarea>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="card analysis-card" aria-label="AI financial expert summary">
+        <div class="section-head">
+          <div>
+            <h2>AI Financial Expert Summary</h2>
+            <p class="subtle">General educational observations based on local entries, not investment advice.</p>
+          </div>
+          <span class="pill">🤖 Local analysis</span>
+        </div>
+
+        <div class="analysis-grid">
+          <div class="agent-panel">
+            <div class="agent-title">✨ Professional Summary</div>
+            <p class="agent-copy">
+              Your sample profile shows meaningful retirement and education assets, but liabilities currently outweigh liquid reserves.
+              With 23 years until the target retirement age and two young children, the dashboard highlights emergency fund strength,
+              high-interest debt exposure, retirement savings consistency, and future education planning as key areas to monitor.
+            </p>
+          </div>
+
+          <div class="chart-panel">
+            <div class="donut-wrap">
+              <div class="donut" aria-hidden="true"></div>
+              <div>
+                <strong>Asset vs Liability View</strong>
+                <div class="legend" style="margin-top: 10px">
+                  <div class="legend-item"><span class="dot green"></span>Assets total: $••••••</div>
+                  <div class="legend-item"><span class="dot red"></span>Liabilities total: $••••••</div>
+                  <div class="legend-item"><span class="dot"></span>Ratio: 0.78 assets per $1 debt</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="insight-list">
+            <div class="insight"><span>✅</span><div><strong>Strengths</strong><p>Retirement, health, education, and brokerage accounts are represented across several asset categories.</p></div></div>
+            <div class="insight"><span>⚠️</span><div><strong>Risk Areas</strong><p>Mortgage, car loan, and credit card balances should stay visible because debt structure affects flexibility.</p></div></div>
+          </div>
+          <div class="insight-list">
+            <div class="insight"><span>👨‍👩‍👧‍👧</span><div><strong>Family Considerations</strong><p>Education savings and emergency reserves matter more with a spouse and two young daughters depending on the household plan.</p></div></div>
+            <div class="insight"><span>🧭</span><div><strong>Improvement Areas</strong><p>Consider tracking savings rate, liability payoff progress, and annual progress toward the target net worth.</p></div></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
