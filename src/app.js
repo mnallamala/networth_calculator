@@ -63,19 +63,23 @@ const defaultSettings = {
 };
 
 let state = {
-  items: loadItems(),
-  settings: loadSettings(),
-  categories: loadCategories(),
+  items: [],
+  settings: structuredClone(defaultSettings),
+  categories: structuredClone(defaultCategories),
   editingId: null,
   showCategoryManager: false,
 };
 
 const firebaseSync = {
+  authStatus: "checking",
+  authError: "",
   status: "connecting",
-  label: "Connecting to Firebase",
+  label: "Checking account",
   ready: false,
   applyingRemote: false,
   userId: null,
+  user: null,
+  pendingAnonymousUser: null,
   docRef: null,
   saveTimer: null,
 };
@@ -83,9 +87,13 @@ const firebaseSync = {
 const app = document.querySelector("#app");
 let categoryById = getCategoryMap();
 
-function loadItems() {
+function scopedStorageKey(baseKey, userId = firebaseSync.userId) {
+  return userId ? `${baseKey}:${userId}` : null;
+}
+
+function loadItems(userId) {
   try {
-    const raw = localStorage.getItem(ITEMS_STORAGE_KEY);
+    const raw = localStorage.getItem(scopedStorageKey(ITEMS_STORAGE_KEY, userId));
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -93,9 +101,9 @@ function loadItems() {
   }
 }
 
-function loadSettings() {
+function loadSettings(userId) {
   try {
-    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const raw = localStorage.getItem(scopedStorageKey(SETTINGS_STORAGE_KEY, userId));
     if (!raw) {
       return structuredClone(defaultSettings);
     }
@@ -111,9 +119,9 @@ function loadSettings() {
   }
 }
 
-function loadCategories() {
+function loadCategories(userId) {
   try {
-    const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    const raw = localStorage.getItem(scopedStorageKey(CATEGORIES_STORAGE_KEY, userId));
     const parsed = raw ? JSON.parse(raw) : defaultCategories;
     return Array.isArray(parsed) && parsed.length > 0 ? parsed : structuredClone(defaultCategories);
   } catch {
@@ -127,9 +135,26 @@ function saveState() {
 }
 
 function saveLocalState() {
-  localStorage.setItem(ITEMS_STORAGE_KEY, JSON.stringify(state.items));
-  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state.settings));
-  localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(state.categories));
+  if (!firebaseSync.userId) return;
+  localStorage.setItem(scopedStorageKey(ITEMS_STORAGE_KEY), JSON.stringify(state.items));
+  localStorage.setItem(scopedStorageKey(SETTINGS_STORAGE_KEY), JSON.stringify(state.settings));
+  localStorage.setItem(scopedStorageKey(CATEGORIES_STORAGE_KEY), JSON.stringify(state.categories));
+}
+
+function loadLocalStateForUser(userId) {
+  state.items = loadItems(userId);
+  state.settings = loadSettings(userId);
+  state.categories = loadCategories(userId);
+  state.editingId = null;
+  state.showCategoryManager = false;
+}
+
+function resetDashboardState() {
+  state.items = [];
+  state.settings = structuredClone(defaultSettings);
+  state.categories = structuredClone(defaultCategories);
+  state.editingId = null;
+  state.showCategoryManager = false;
 }
 
 function setFirebaseStatus(status, label) {
@@ -183,9 +208,37 @@ function applyRemoteState(remoteState) {
   firebaseSync.applyingRemote = false;
 }
 
+async function connectFirebaseUser(user) {
+  firebaseSync.authStatus = "loading";
+  firebaseSync.authError = "";
+  firebaseSync.ready = false;
+  firebaseSync.user = user;
+  firebaseSync.userId = user.uid;
+  loadLocalStateForUser(user.uid);
+  setFirebaseStatus("connecting", "Loading your Firebase data");
+  render();
+
+  const database = window.firebase.firestore();
+  firebaseSync.docRef = database.collection("users").doc(user.uid).collection("apps").doc("networth");
+  const snapshot = await firebaseSync.docRef.get();
+
+  firebaseSync.ready = true;
+  firebaseSync.authStatus = "signed-in";
+  if (snapshot.exists) {
+    applyRemoteState(snapshot.data());
+    render();
+    setFirebaseStatus("synced", "Loaded from Firebase");
+  } else {
+    render();
+    await saveFirebaseState();
+  }
+}
+
 async function initializeFirebaseSync() {
   if (!window.firebase) {
-    setFirebaseStatus("error", "Local only - Firebase SDK unavailable");
+    firebaseSync.authStatus = "error";
+    firebaseSync.authError = "Firebase SDK could not be loaded.";
+    render();
     return;
   }
 
@@ -193,40 +246,94 @@ async function initializeFirebaseSync() {
     if (!window.firebase.apps.length) {
       window.firebase.initializeApp(firebaseConfig);
     }
-    const database = window.firebase.firestore();
+    window.firebase.auth().onAuthStateChanged(async (user) => {
+      try {
+        if (user && !user.isAnonymous) {
+          await connectFirebaseUser(user);
+          return;
+        }
 
-    try {
-      await database.enablePersistence({ synchronizeTabs: true });
-    } catch (error) {
-      if (!['failed-precondition', 'unimplemented'].includes(error.code)) {
-        console.warn("Firestore persistence unavailable", error);
+        firebaseSync.pendingAnonymousUser = user?.isAnonymous ? user : null;
+        firebaseSync.authStatus = "signed-out";
+        firebaseSync.authError = "";
+        firebaseSync.ready = false;
+        firebaseSync.user = null;
+        firebaseSync.userId = null;
+        firebaseSync.docRef = null;
+        resetDashboardState();
+        render();
+      } catch (error) {
+        console.error("Firebase user loading failed", error);
+        firebaseSync.authStatus = "error";
+        firebaseSync.authError = getFirebaseErrorMessage(error);
+        render();
+      }
+    });
+  } catch (error) {
+    console.error("Firebase initialization failed", error);
+    firebaseSync.authStatus = "error";
+    firebaseSync.authError = getFirebaseErrorMessage(error);
+    render();
+  }
+}
+
+function getFirebaseErrorMessage(error) {
+  if (["auth/operation-not-allowed", "auth/admin-restricted-operation"].includes(error?.code)) {
+    return "Enable Google sign-in in the Firebase Console.";
+  }
+  if (error?.code === "auth/unauthorized-domain") {
+    return "Add this website to Firebase Authentication authorized domains.";
+  }
+  if (["permission-denied", "firestore/permission-denied"].includes(error?.code)) {
+    return "Publish the included Firestore security rules.";
+  }
+  if (error?.code === "auth/popup-closed-by-user") {
+    return "Google sign-in was cancelled.";
+  }
+  return "Firebase sign-in is unavailable. Please try again.";
+}
+
+async function signInWithGoogle() {
+  firebaseSync.authError = "";
+  firebaseSync.authStatus = "signing-in";
+  render();
+
+  try {
+    const provider = new window.firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    const anonymousUser = firebaseSync.pendingAnonymousUser;
+
+    if (anonymousUser) {
+      try {
+        await anonymousUser.linkWithPopup(provider);
+        firebaseSync.pendingAnonymousUser = null;
+        return;
+      } catch (error) {
+        if (error.code === "auth/credential-already-in-use" && error.credential) {
+          await window.firebase.auth().signInWithCredential(error.credential);
+          return;
+        }
+        throw error;
       }
     }
 
-    let user = window.firebase.auth().currentUser;
-    if (!user) {
-      const credential = await window.firebase.auth().signInAnonymously();
-      user = credential.user;
-    }
-
-    if (!user) throw new Error("Firebase did not return an authenticated user.");
-
-    firebaseSync.userId = user.uid;
-    firebaseSync.docRef = database.collection("users").doc(user.uid).collection("apps").doc("networth");
-    const snapshot = await firebaseSync.docRef.get();
-
-    firebaseSync.ready = true;
-    if (snapshot.exists) {
-      applyRemoteState(snapshot.data());
-      render();
-      setFirebaseStatus("synced", "Loaded from Firebase");
-    } else {
-      await saveFirebaseState();
-    }
+    await window.firebase.auth().signInWithPopup(provider);
   } catch (error) {
-    console.error("Firebase initialization failed", error);
-    firebaseSync.ready = false;
-    setFirebaseStatus("error", "Local only - Firebase setup required");
+    console.error("Google sign-in failed", error);
+    firebaseSync.authStatus = "signed-out";
+    firebaseSync.authError = getFirebaseErrorMessage(error);
+    render();
+  }
+}
+
+async function signOutUser() {
+  try {
+    window.clearTimeout(firebaseSync.saveTimer);
+    if (firebaseSync.ready) await saveFirebaseState();
+    await window.firebase.auth().signOut();
+  } catch (error) {
+    console.error("Sign out failed", error);
+    setFirebaseStatus("error", "Sign out failed");
   }
 }
 
@@ -317,6 +424,11 @@ function categoryIcon(category, size = "md") {
 }
 
 function render() {
+  if (firebaseSync.authStatus !== "signed-in") {
+    renderAuthScreen();
+    return;
+  }
+
   categoryById = getCategoryMap();
   const summary = calculateSummary();
   const assets = state.items.filter((item) => categoryById[item.categoryId]?.type === "asset");
@@ -346,20 +458,65 @@ function render() {
   bindEvents();
 }
 
+function renderAuthScreen() {
+  const isBusy = ["checking", "signing-in", "loading"].includes(firebaseSync.authStatus);
+  const buttonText =
+    firebaseSync.authStatus === "signing-in"
+      ? "Opening Google sign-in..."
+      : firebaseSync.authStatus === "loading"
+        ? "Loading your dashboard..."
+        : firebaseSync.authStatus === "checking"
+          ? "Checking your session..."
+          : "Continue with Google";
+
+  app.innerHTML = `
+    <section class="auth-shell">
+      <div class="auth-brand">
+        <div class="brand-mark" aria-hidden="true">💰</div>
+        <div>
+          <h1>Net worth Tracking</h1>
+          <p>Private financial tracking for your Google account.</p>
+        </div>
+      </div>
+      <div class="auth-card">
+        <div class="auth-icon" aria-hidden="true">🔐</div>
+        <h2>Sign in to your dashboard</h2>
+        <p class="auth-copy">Your assets, liabilities, goals, and categories are stored under your private Firebase user ID.</p>
+        <button class="google-sign-in-button" type="button" id="googleSignIn" ${isBusy ? "disabled" : ""}>
+          <span class="google-g" aria-hidden="true">G</span>
+          ${buttonText}
+        </button>
+        ${firebaseSync.authError ? `<p class="auth-error" role="alert">${escapeHtml(firebaseSync.authError)}</p>` : ""}
+        <p class="auth-privacy">🛡️ Another Google account cannot read your financial data.</p>
+      </div>
+    </section>
+  `;
+
+  document.querySelector("#googleSignIn")?.addEventListener("click", signInWithGoogle);
+}
+
 function renderHeader() {
   const greeting = getGreeting();
   const selectedCurrency = currencies.find((currency) => currency.code === state.settings.currency) || currencies[0];
+  const userName = firebaseSync.user?.displayName || firebaseSync.user?.email || "Account";
+  const firstName = firebaseSync.user?.displayName?.split(" ")[0] || "there";
+  const userInitial = userName.charAt(0).toUpperCase();
   return `
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">💰</div>
         <div>
-          <p class="greeting">${greeting}, Mahesh</p>
+          <p class="greeting">${greeting}, ${escapeHtml(firstName)}</p>
           <h1>Net worth Tracking</h1>
-          <p class="subtle">Private local dashboard for family-focused financial clarity.</p>
+          <p class="subtle">Private financial dashboard synced to your account.</p>
         </div>
       </div>
       <div class="topbar-actions">
+        <div class="user-account">
+          <span class="user-avatar" aria-hidden="true">${escapeHtml(userInitial)}</span>
+          <span class="user-account-name">${escapeHtml(userName)}</span>
+          <button class="sign-out-button" type="button" id="signOutButton">Sign out</button>
+        </div>
         <div class="topbar-controls">
           <label class="currency-control" for="currencySelector">
             <span class="currency-icon" aria-hidden="true">${selectedCurrency.symbol}</span>
@@ -382,7 +539,7 @@ function renderHeader() {
           <span class="firebase-sync-status is-${firebaseSync.status}" id="firebaseSyncStatus">
             <span class="sync-dot" aria-hidden="true"></span>${escapeHtml(firebaseSync.label)}
           </span>
-          <p class="privacy-note">🔒 Data is cached locally and privately synced to your Firebase user.</p>
+          <p class="privacy-note">🔒 Cached locally per account and privately synced to Firebase.</p>
         </div>
       </div>
     </header>
@@ -738,6 +895,8 @@ function insight(icon, title, text) {
 }
 
 function bindEvents() {
+  document.querySelector("#signOutButton").addEventListener("click", signOutUser);
+
   document.querySelector("#currencySelector").addEventListener("change", (event) => {
     const currencyCode = String(event.target.value);
     if (!currencies.some((currency) => currency.code === currencyCode)) return;

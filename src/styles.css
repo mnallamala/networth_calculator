@@ -60,6 +60,111 @@ h1 {
   padding: 24px 0 34px;
 }
 
+.auth-shell {
+  display: grid;
+  width: min(460px, 100%);
+  min-height: calc(100vh - 58px);
+  margin: 0 auto;
+  place-content: center;
+  gap: 18px;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-brand p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.auth-card {
+  padding: 28px;
+  border: 1px solid rgba(219, 230, 238, 0.94);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.auth-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  place-items: center;
+  border-radius: 8px;
+  background: #e8f6ed;
+  font-size: 1.45rem;
+}
+
+.auth-card h2 {
+  font-size: 1.25rem;
+}
+
+.auth-copy {
+  margin: 9px 0 18px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.google-sign-in-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #cbd8e1;
+  border-radius: 8px;
+  color: #243445;
+  background: #fff;
+  font-weight: 850;
+}
+
+.google-sign-in-button:hover:not(:disabled) {
+  border-color: #8eb3d1;
+  background: #f7fbfe;
+}
+
+.google-sign-in-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.google-g {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #4285f4;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.auth-error {
+  margin-top: 12px;
+  padding: 9px 10px;
+  border: 1px solid #f0c4c1;
+  border-radius: 8px;
+  color: #9a3430;
+  background: #fff7f6;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.auth-privacy {
+  margin-top: 14px;
+  color: #526476;
+  font-size: 0.8rem;
+}
+
 .subtle {
   color: var(--muted);
   font-size: 0.92rem;
@@ -107,6 +212,46 @@ h1 {
   display: grid;
   justify-items: end;
   gap: 8px;
+}
+
+.user-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.user-avatar {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #0f6f49;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.user-account-name {
+  max-width: 190px;
+  overflow: hidden;
+  color: #3e5061;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sign-out-button {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #526273;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .topbar-controls {
@@ -1152,6 +1297,14 @@ textarea {
 
   .topbar-actions {
     justify-items: stretch;
+  }
+
+  .user-account {
+    justify-content: flex-start;
+  }
+
+  .user-account-name {
+    max-width: min(210px, 48vw);
   }
 
   .topbar-controls {

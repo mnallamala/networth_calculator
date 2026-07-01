@@ -34,20 +34,21 @@ When Firebase is configured, the same app state is privately synced to:
 users/{firebaseAuthUid}/apps/networth
 ```
 
-The app uses Firebase Anonymous Authentication. Each browser profile receives a separate Firebase UID, and the included Firestore rules restrict access to the matching UID.
+The app uses Firebase Google Authentication. Browser cache keys and Firestore documents are scoped to the signed-in Firebase UID, and the included Firestore rules restrict access to that UID.
 
 ## Firebase Setup
 
 In the Firebase project `nallamala-ccf51`:
 
-1. Open **Authentication > Sign-in method** and enable **Anonymous** authentication.
-2. Open **Firestore Database** and create a database.
-3. Open the Firestore **Rules** tab and publish the contents of `firestore.rules`.
-4. In **Authentication > Settings > Authorized domains**, add `mnallamala.github.io` for the GitHub Pages site.
+1. Open **Authentication > Sign-in method** and enable the **Google** provider.
+2. Select a project support email and save the Google provider configuration.
+3. Open **Firestore Database** and create a database.
+4. Open the Firestore **Rules** tab and publish the contents of `firestore.rules`.
+5. In **Authentication > Settings > Authorized domains**, add `mnallamala.github.io` for the GitHub Pages site.
 
 The app shows **Saved to Firebase** when cloud sync is working. If setup or connectivity is unavailable, it shows **Local only** and continues storing changes in the browser.
 
-Important: anonymous authentication keeps users isolated, but it does not provide cross-browser or cross-device account recovery. A future Google or email sign-in flow is required for the same person to access their data on multiple devices.
+The same Google account can access its Firestore data across supported browsers and devices. If an older anonymous Firebase session exists, the app attempts to link it to the selected Google account so its Firebase UID and data are preserved.
 
 ## Modify Categories
 
