@@ -116,6 +116,56 @@ h1 {
   gap: 10px;
 }
 
+.header-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.firebase-sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: #536577;
+  background: #f8fbfd;
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #8b9aa8;
+}
+
+.firebase-sync-status.is-connecting .sync-dot,
+.firebase-sync-status.is-saving .sync-dot {
+  background: #d69817;
+  box-shadow: 0 0 0 3px rgba(214, 152, 23, 0.14);
+}
+
+.firebase-sync-status.is-synced .sync-dot {
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(19, 138, 89, 0.14);
+}
+
+.firebase-sync-status.is-error {
+  color: #9a3430;
+  border-color: #f0c4c1;
+  background: #fff7f6;
+}
+
+.firebase-sync-status.is-error .sync-dot {
+  background: var(--red);
+}
+
 .currency-control {
   display: inline-flex;
   align-items: center;
@@ -1107,6 +1157,12 @@ textarea {
   .topbar-controls {
     display: grid;
     grid-template-columns: 112px minmax(0, 1fr);
+  }
+
+  .header-status-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
   }
 
   .currency-control {

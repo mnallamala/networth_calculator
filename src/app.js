@@ -2,6 +2,15 @@ const ITEMS_STORAGE_KEY = "my-net-worth-tracker:items";
 const SETTINGS_STORAGE_KEY = "my-net-worth-tracker:settings";
 const CATEGORIES_STORAGE_KEY = "my-net-worth-tracker:categories";
 
+const firebaseConfig = {
+  apiKey: "AIzaSyAWwl3wuvFKaYdRkv_YzowCfyc45RSrO6M",
+  authDomain: "nallamala-ccf51.firebaseapp.com",
+  projectId: "nallamala-ccf51",
+  storageBucket: "nallamala-ccf51.firebasestorage.app",
+  messagingSenderId: "136927835118",
+  appId: "1:136927835118:web:9c55ca883c17c4e63d54ff",
+};
+
 const defaultCategories = [
   { id: "savings", label: "Savings Account", type: "asset", icon: "🐷", description: "Emergency savings and cash reserves" },
   { id: "checking", label: "Checking Account", type: "asset", icon: "👛", description: "Everyday banking balance" },
@@ -61,6 +70,16 @@ let state = {
   showCategoryManager: false,
 };
 
+const firebaseSync = {
+  status: "connecting",
+  label: "Connecting to Firebase",
+  ready: false,
+  applyingRemote: false,
+  userId: null,
+  docRef: null,
+  saveTimer: null,
+};
+
 const app = document.querySelector("#app");
 let categoryById = getCategoryMap();
 
@@ -103,9 +122,112 @@ function loadCategories() {
 }
 
 function saveState() {
+  saveLocalState();
+  queueFirebaseSave();
+}
+
+function saveLocalState() {
   localStorage.setItem(ITEMS_STORAGE_KEY, JSON.stringify(state.items));
   localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state.settings));
   localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(state.categories));
+}
+
+function setFirebaseStatus(status, label) {
+  firebaseSync.status = status;
+  firebaseSync.label = label;
+  const indicator = document.querySelector("#firebaseSyncStatus");
+  if (!indicator) return;
+  indicator.className = `firebase-sync-status is-${status}`;
+  indicator.innerHTML = `<span class="sync-dot" aria-hidden="true"></span>${escapeHtml(label)}`;
+}
+
+function queueFirebaseSave() {
+  if (!firebaseSync.ready || firebaseSync.applyingRemote || !firebaseSync.docRef) return;
+  window.clearTimeout(firebaseSync.saveTimer);
+  setFirebaseStatus("saving", "Saving to Firebase");
+  firebaseSync.saveTimer = window.setTimeout(saveFirebaseState, 650);
+}
+
+async function saveFirebaseState() {
+  if (!firebaseSync.ready || !firebaseSync.docRef) return;
+  try {
+    await firebaseSync.docRef.set({
+      items: state.items,
+      settings: state.settings,
+      categories: state.categories,
+      schemaVersion: 1,
+      updatedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    setFirebaseStatus("synced", "Saved to Firebase");
+  } catch (error) {
+    console.error("Firebase save failed", error);
+    setFirebaseStatus("error", "Local only - sync failed");
+  }
+}
+
+function applyRemoteState(remoteState) {
+  firebaseSync.applyingRemote = true;
+  if (Array.isArray(remoteState.items)) state.items = remoteState.items;
+  if (Array.isArray(remoteState.categories) && remoteState.categories.length > 0) {
+    state.categories = remoteState.categories;
+  }
+  if (remoteState.settings && typeof remoteState.settings === "object") {
+    state.settings = {
+      ...defaultSettings,
+      ...remoteState.settings,
+      goal: { ...defaultSettings.goal, ...(remoteState.settings.goal || {}) },
+      profile: { ...defaultSettings.profile, ...(remoteState.settings.profile || {}) },
+    };
+  }
+  saveLocalState();
+  firebaseSync.applyingRemote = false;
+}
+
+async function initializeFirebaseSync() {
+  if (!window.firebase) {
+    setFirebaseStatus("error", "Local only - Firebase SDK unavailable");
+    return;
+  }
+
+  try {
+    if (!window.firebase.apps.length) {
+      window.firebase.initializeApp(firebaseConfig);
+    }
+    const database = window.firebase.firestore();
+
+    try {
+      await database.enablePersistence({ synchronizeTabs: true });
+    } catch (error) {
+      if (!['failed-precondition', 'unimplemented'].includes(error.code)) {
+        console.warn("Firestore persistence unavailable", error);
+      }
+    }
+
+    let user = window.firebase.auth().currentUser;
+    if (!user) {
+      const credential = await window.firebase.auth().signInAnonymously();
+      user = credential.user;
+    }
+
+    if (!user) throw new Error("Firebase did not return an authenticated user.");
+
+    firebaseSync.userId = user.uid;
+    firebaseSync.docRef = database.collection("users").doc(user.uid).collection("apps").doc("networth");
+    const snapshot = await firebaseSync.docRef.get();
+
+    firebaseSync.ready = true;
+    if (snapshot.exists) {
+      applyRemoteState(snapshot.data());
+      render();
+      setFirebaseStatus("synced", "Loaded from Firebase");
+    } else {
+      await saveFirebaseState();
+    }
+  } catch (error) {
+    console.error("Firebase initialization failed", error);
+    firebaseSync.ready = false;
+    setFirebaseStatus("error", "Local only - Firebase setup required");
+  }
 }
 
 function formatCurrency(value) {
@@ -256,7 +378,12 @@ function renderHeader() {
             <span class="switch" aria-hidden="true"></span>
           </button>
         </div>
-        <p class="privacy-note">🔒 Your financial data is stored locally in your browser and is not sent anywhere.</p>
+        <div class="header-status-row">
+          <span class="firebase-sync-status is-${firebaseSync.status}" id="firebaseSyncStatus">
+            <span class="sync-dot" aria-hidden="true"></span>${escapeHtml(firebaseSync.label)}
+          </span>
+          <p class="privacy-note">🔒 Data is cached locally and privately synced to your Firebase user.</p>
+        </div>
       </div>
     </header>
   `;
@@ -812,3 +939,4 @@ function bindEvents() {
 }
 
 render();
+initializeFirebaseSync();
