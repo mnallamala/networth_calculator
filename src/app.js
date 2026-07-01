@@ -475,20 +475,27 @@ function renderAuthScreen() {
         <div class="brand-mark" aria-hidden="true">💰</div>
         <div>
           <h1>Net worth Tracking</h1>
-          <p>Private financial tracking for your Google account.</p>
+          <p>A clear view of your financial progress.</p>
         </div>
       </div>
       <div class="auth-card">
-        <div class="auth-icon" aria-hidden="true">🔐</div>
-        <h2>Sign in to your dashboard</h2>
-        <p class="auth-copy">Your assets, liabilities, goals, and categories are stored under your private Firebase user ID.</p>
+        <p class="auth-kicker">Secure account access</p>
+        <h2>Welcome back</h2>
+        <p class="auth-copy">Sign in with Google to open your private net worth dashboard.</p>
         <button class="google-sign-in-button" type="button" id="googleSignIn" ${isBusy ? "disabled" : ""}>
           <span class="google-g" aria-hidden="true">G</span>
-          ${buttonText}
+          <span>${buttonText}</span>
         </button>
         ${firebaseSync.authError ? `<p class="auth-error" role="alert">${escapeHtml(firebaseSync.authError)}</p>` : ""}
-        <p class="auth-privacy">🛡️ Another Google account cannot read your financial data.</p>
+        <div class="auth-security-note">
+          <span class="auth-security-icon" aria-hidden="true">✓</span>
+          <div>
+            <strong>Your information stays private</strong>
+            <p>Only this signed-in Google account can access its dashboard data.</p>
+          </div>
+        </div>
       </div>
+      <p class="auth-footer">Protected by Firebase Authentication</p>
     </section>
   `;
 
